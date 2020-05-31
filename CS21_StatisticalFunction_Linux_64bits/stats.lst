@@ -1,0 +1,115 @@
+     1                                  
+     2                                  ;Create a function called calcvariance. The function will take two arguments
+     3                                  ;1. The address of the sample array (an array of quad words)
+     4                                  ;2. The number of items in the array
+     5                                  
+     6                                  
+     7                                  
+     8                                   
+     9                                  SECTION     .text
+    10                                  
+    11                                  	global calcvariance 
+    12                                  		
+    13                                  
+    14                                  calcvariance:
+    15                                  
+    16 00000000 4831FF                  	xor 	rdi,	rdi							;Clear rdi
+    17 00000003 4831F6                  	xor 	rsi,	rsi							;Clear rsi
+    18 00000006 4831C0                  	xor		rax,	rax							;clear acclumulator before use	
+    19 00000009 4D31C0                  	xor 	r8,		r8							;clear r8
+    20                                  ;----------------------------------------------------------------------------------------------------	
+    21 0000000C 55                      	push	rbp									;Save the current rbp
+    22 0000000D 4889E5                  	mov		rbp,rsp								;Set rbp address to be the same as rsp in the stack
+    23 00000010 4883EC18                	sub		rsp,24								;allocating space for local Variables
+    24                                  ;------------------------------------------------------------------------------------------------------ 
+    25                                  ;NOTE Stack plate: 									
+    26                                  				;(rbp-24) AvgArray
+    27                                  				;(rbp-16) Sqaure-array
+    28                                  				;(rbp-8) for allocate array									
+    29                                  ;------------------------------------------------------------------------------------------------------
+    30                                  				
+    31 00000014 488B4510                	mov		rax,	QWORD[rbp + 16]				;SampleArray.len
+    32 00000018 BB08000000              	mov		rbx,	8							;To dynamic allocate size of array (8 bytes * size of array) 
+    33 0000001D 48F7E3                  	mul		rbx									;(8*size of array)
+    34                                  
+    35                                  ;Reserve memory
+    36                                  ;--------------------------------------------------------------------------------------------------------	
+    37 00000020 4829C4                  	sub		rsp,		rax 					;Subtract with address that pointed by rsp PTR to allocate memory for array
+    38                                  
+    39 00000023 48C745E800000000        	mov		QWORD	[rbp - 24], 0				;Clear the  AvgArray
+    40                                  
+    41                                  ;Important										;Save the location that allocate array
+    42                                  ;--------------------------------------------------------------------------------------------------------
+    43 0000002B 4C8945F8                	mov 	QWORD[rbp - 8],	r8
+    44 0000002F 4831C0                  	xor	    rax,rax								;Clear rax before use
+    45 00000032 4831C9                  	xor		rcx, rcx							;Clear rcx	
+    46                                  
+    47                                  ; 2 arguments passing
+    48                                  ;-------------------------------------------------------------------------------------------------------- 		 
+    49 00000035 488B7D18                	mov		rdi,	QWORD	[rbp + 24]			;SampleArray address
+    50 00000039 488B4D10                	mov		rcx,	QWORD	[rbp + 16] 			;SampleArray Size
+    51                                  	
+    52                                  getMean:
+    53                                  		
+    54 0000003D 480307                  		add		rax,	[rdi]					;array element
+    55 00000040 4883C708                		add		rdi,	8 						;increment array index 
+    56                                  
+    57 00000044 E2F7                    loop getMean
+    58                                  
+    59                                  ;---------------------------------------------------------------------------------------------------------							
+    60                                  
+    61 00000046 4831D2                  	xor 	rdx,rdx								;Clear out RDX because there is left over of remainders
+    62 00000049 488B5D10                	mov		rbx,QWORD[rbp + 16]					;size of array for dividing 
+    63 0000004D 4899                    	cqo											;Sign extends 
+    64 0000004F 48F7FB                  	idiv	rbx									
+    65 00000052 EB00                    	jmp 	continue
+    66                                  
+    67                                  continue:
+    68                                  	
+    69 00000054 488945E8                	mov		QWORD[rbp - 24],rax					;Store the result from rax (MEAN) from to StackFrame
+    70                                  											
+    71 00000058 48C745F000000000        	mov		QWORD[rbp - 16],0					;Clear out the allocate memory that gonna use for square
+    72                                  
+    73 00000060 4831C0                  	xor		rax,rax								;clear Accumulator
+    74                                  
+    75 00000063 4831C9                  	xor		rcx,rcx								;clear the loop counter
+    76                                  
+    77 00000066 4831F6                  	xor		rsi,rsi								;Clear rsi
+    78                                  
+    79 00000069 488B4D10                	mov		rcx, QWORD[rbp + 16]				;Set the loop counter
+    80 0000006D 488B7DE8                	mov		rdi,[rbp - 24]						;Set Rdi to contain AvgArray 
+    81                                  	
+    82 00000071 488B7518                	mov		rsi,QWORD	[rbp + 24]				;Array Addreess
+    83                                  
+    84 00000075 41B920000000            	mov		r9,32 								;position where the rbp start from
+    85                                  	
+    86                                  
+    87                                  subtractbyMean:
+    88 0000007B 488B1E                  		mov		rbx,	[rsi]					;Move array index to rbx
+    89 0000007E 4829FB                  		sub		rbx,	rdi						;Subtact caculate from the array element 	
+    90 00000081 4889D8                  		mov		rax,	rbx						
+    91 00000084 48F7EB                  		imul	rbx								;multiply itself
+    92 00000087 4A89440D00              		mov		QWORD	[rbp + r9],rax			;move Square sum to new array 
+    93 0000008C 480145F0                		add		QWORD	[rbp - 16],	rax			;Add together of square number in array indexs 
+    94 00000090 4883C608                		add		rsi,	8						;increment index
+    95 00000094 4983C108                		add		r9,		8 						;inrement stack position
+    96 00000098 E2E1                    loop subtractbyMean								
+    97                                  		
+    98                                  		
+    99 0000009A 488B45F0                	mov		rax,	QWORD	[rbp - 16]			;Store the result to rax
+   100 0000009E 4831D2                  	xor		rdx,	rdx							 
+   101 000000A1 4889DB                  	mov		rbx,	rbx 							
+   102 000000A4 4899                    	cqo											;sign extends 64 to 128
+   103 000000A6 488B5D10                	mov		rbx,	QWORD	[rbp + 16]			;size of array 
+   104 000000AA 48F7FB                  	idiv	rbx									;Devide by # of total element
+   105                                  										
+   106                                  
+   107 000000AD 4889EC                  	mov		rsp,	rbp
+   108 000000B0 5D                      	pop		rbp 
+   109                                  
+   110 000000B1 C21000                  	ret 16 										;Pop out two argument 8 bits each
+   111                                  
+   112                                  ;------------------------------------------------------------------------------------------------------------------------------
+   113                                  
+   114                                  ;RAX contain variance
+   115                                  	

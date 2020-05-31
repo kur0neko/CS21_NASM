@@ -1,0 +1,8 @@
+#!/bin/bash
+#./build funcs main
+
+nasm -g -f elf32 -F dwarf $1.asm -l $1.lst
+g++ main.cpp -c -m32 -o main.o
+g++ main.o funcs.o -m32 -o main
+
+

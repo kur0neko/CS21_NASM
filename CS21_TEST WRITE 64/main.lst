@@ -1,0 +1,53 @@
+     1                                  ;; Write to and create file
+     2                                  global _start
+     3                                  
+     4                                  section .text
+     5                                  _start:
+     6                                  	;; sys_open(file, permissions)
+     7 00000000 B802000000              	mov	rax, 2		; sys_open
+     8 00000005 48BF-                   	mov	rdi, file	; file
+     8 00000007 [0E00000000000000] 
+     9 0000000F BEFF010000              	mov	rsi, 777o
+    10                                  		; Read/Write permissions
+    11 00000014 0F05                    	syscall
+    12                                  
+    13                                  	;; File exists?
+    14 00000016 BA00000000              	mov	rdx,0
+    15 0000001B 4839C2                  	cmp	rdx,rax
+    16 0000001E 7E11                    	jle	WR
+    17                                  
+    18                                  	;; Create file
+    19 00000020 B855000000              	mov	rax,85		; sys_creat
+    20 00000025 0F05                    	syscall
+    21                                  
+    22                                  	;; File created sucessfully?
+    23 00000027 BA00000000              	mov	rdx,0
+    24 0000002C 4839D0                  	cmp	rax,rdx
+    25 0000002F 7E23                    	jle	EX
+    26                                  
+    27                                  WR:
+    28                                  	;; File descriptor copy
+    29 00000031 4889C3                  	mov	rbx,rax
+    30                                  
+    31                                  	;; sys_write(stream, message, length)
+    32 00000034 B801000000              	mov	rax, 1        	; sys_write
+    33 00000039 4889DF                  	mov	rdi, rbx        ; ./nope
+    34 0000003C 48BE-                   	mov	rsi, message    ; message address
+    34 0000003E [0000000000000000] 
+    35 00000046 BA16000000              	mov	rdx, length    	; message string length
+    36 0000004B 0F05                    	syscall
+    37                                  
+    38 0000004D B803000000              	mov	rax, 3
+    39 00000052 0F05                    	syscall
+    40                                  
+    41                                  EX:	
+    42                                  	;; sys_exit(return_code)
+    43 00000054 B83C000000              	mov	rax, 60        	; sys_exit
+    44 00000059 BF00000000              	mov	rdi, 0        	; return 0 (success)
+    45 0000005E 0F05                    	syscall
+    46                                  
+    47                                  section .data
+    48 00000000 48656C6C6F2C20776F-     message:	db	'Hello, world!',0x0A    ; message and newline
+    48 00000009 726C64210A         
+    49 0000000E 66696C652E747874        file:		db	'file.txt'		; File to write
+    50                                  length:		equ	$-message        ; NASM definition pseudo-instruction 
